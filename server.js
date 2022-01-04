@@ -9,10 +9,13 @@ app.use(express.json());
 
 //static file
 const publicPath = path.join(__dirname, "./public");
-app.use(express.static(publicPath));
+app.use("/public", express.static(publicPath));
 
 //router
 app.use("/api/kltn", rootRouter);
+
+// cài đặt ứng dụng kiểu json
+app.use(express.json());
 
 //connect
 app.listen(4000, async () => {

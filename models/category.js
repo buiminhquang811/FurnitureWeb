@@ -15,7 +15,18 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   Category.init({
-    name: DataTypes.STRING,
+    name: {
+      type: DataTypes.STRING,
+      validate: {
+        checkLen(value) {
+          if (value) {
+            return true;
+          } else {
+            throw new Error("Tên không được để trống");
+          }
+        },
+      },
+    },
     parentId: DataTypes.INTEGER,
     note: DataTypes.STRING,
     featuredImage: DataTypes.STRING,
