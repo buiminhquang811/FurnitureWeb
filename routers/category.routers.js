@@ -1,7 +1,7 @@
 const { Category } = require("../models");
 
 const express = require("express");
-const { createCategory, getAllCategory, updateCategory } = require("../controllers/category.controller");
+const { createCategory, getAllCategory, updateCategory, deleteCategory } = require("../controllers/category.controller");
 const { authenticate } = require("../middlewares/auth/authenticate");
 const { authorize } = require("../middlewares/auth/authorize");
 const {checkEmpty} = require("../middlewares/validations/checkEmpty");
@@ -14,6 +14,7 @@ const categoryRouter = express.Router();
 categoryRouter.post("/create", authenticate, authorize(["MANAGER"]), uploadImage("categoriesImg"),createCategory);
 categoryRouter.get("/all-categories", getAllCategory);
 categoryRouter.put("/edit/:id", authenticate, authorize(["MANAGER"]), checkExist(Category), uploadImage("categoriesImg"), updateCategory)
+categoryRouter.delete("/:id", authenticate, authorize(["MANAGER"]), checkExist(Category), deleteCategory)
 
 module.exports = {
   categoryRouter

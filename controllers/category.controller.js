@@ -47,8 +47,23 @@ const updateCategory = async (req, res) => {
 	}
 };
 
+const deleteCategory = async (req, res) => {
+	const { id } = req.params;
+	try {
+		await Category.destroy({
+		  where: {
+			id,
+		  },
+		});
+		res.status(200).send("xóa thành công");
+	  } catch (error) {
+		res.status(500).send(error);
+	  }
+}
+
 module.exports = {
   createCategory,
 	getAllCategory,
-	updateCategory
+	updateCategory,
+	deleteCategory
 };
