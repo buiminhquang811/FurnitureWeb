@@ -1,5 +1,5 @@
 const { Producer, sequelize } = require("../models");
-
+const { QueryTypes } = require("sequelize");
 const createProducer = async (req, res) => {
 	const {userName} = req.user;
 	const {name, address, link, note } = req.body;
@@ -12,12 +12,28 @@ const createProducer = async (req, res) => {
 };
 
 const getAllProducer = async (req, res) => {
+	const {page, size, term} = req.query;
+	const offset = page*size;
+	let subQuery = `select count (*) as totalRow from producers`;
+	if(term && term.length) {
+		subQuery += ` where name like '%${term}%'`;
+	};
+
+	let query = `select id, name, address, note, link, createdBy, updatedAt, updatedBy, createdAt from producers`;
+	if(term && term.length) {
+		query += ` where name like '%${term}%'`;
+	};
+	query += ` limit ${size} offset ${offset}`;
+
 	try {
-		const [listProducer] = await sequelize.query(
-		`select id, name, address, note, link, createdBy, updatedAt from producers`
-		);
-		res.status(200).send(listProducer);
+		const [listProducer] = await sequelize.query(query);
+		const totalRow = await sequelize.query(subQuery, { type: QueryTypes.SELECT });
+		const obj = {};
+		obj.listProducer = listProducer;
+		obj.totalRow = totalRow[0].totalRow
+		res.status(200).send(obj);
 	} catch (error) {
+		console.log({error})
 		res.status(500).send(error);
 	}
 };

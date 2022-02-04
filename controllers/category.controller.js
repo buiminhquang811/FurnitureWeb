@@ -1,3 +1,4 @@
+const { QueryTypes } = require("sequelize");
 const { Category, sequelize } = require("../models");
 
 const createCategory = async (req, res) => {
@@ -14,11 +15,25 @@ const createCategory = async (req, res) => {
 };
 
 const getAllCategory = async (req, res) => {
+	const {page, size, term} = req.query;
+	const offset = page*size;
+	let subQuery = `select count (*) as totalRow from categories`;
+	if(term && term.length) {
+		subQuery += ` where name like '%${term}%'`;
+	};
+	let query = `select id, name, parentId, note, featuredImage, createdBy, updatedAt, updatedBy, createdAt from categories`;
+	if(term && term.length) {
+		query += ` where name like '%${term}%'`;
+	};
+	query += ` limit ${size} offset ${offset}`;
+
 	try {
-		const [listCategory] = await sequelize.query(
-		`select id, name, parentId, note, featuredImage, createdBy, updatedAt from categories`
-		);
-		res.status(200).send(listCategory);
+		const [listCategory] = await sequelize.query(query);
+		const totalRow = await sequelize.query(subQuery, { type: QueryTypes.SELECT });
+		const obj = {};
+		obj.listCategory = listCategory;
+		obj.totalRow = totalRow[0].totalRow
+		res.status(200).send(obj);
 	} catch (error) {
 		res.status(500).send(error);
 	}

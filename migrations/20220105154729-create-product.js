@@ -11,6 +11,7 @@ module.exports = {
       code: {
         type: Sequelize.STRING,
         allowNull: false,
+        unique: true,
       },
       name: {
         type: Sequelize.STRING,
@@ -64,7 +65,8 @@ module.exports = {
         type: Sequelize.STRING
       },
       status: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
+        defaultValue: 1,
       },
       createdBy: {
         type: Sequelize.STRING

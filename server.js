@@ -2,9 +2,10 @@ const express = require('express');
 const path = require('path');
 const {sequelize} = require("./models"); 
 const { rootRouter } = require("./routers");
+var cors = require('cors');
 
 const app = express();
-
+app.use(cors());
 app.use(express.json());
 
 //static file

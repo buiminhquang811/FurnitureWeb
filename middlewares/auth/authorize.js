@@ -1,5 +1,6 @@
 const authorize = (arrType) => (req, res, next) => {
     const { user } = req;
+    console.log({user});
     if (arrType.findIndex((ele) => ele === user.role) > -1) {
       next();
     } else {
