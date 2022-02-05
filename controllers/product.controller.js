@@ -1,9 +1,16 @@
 const { Product, sequelize } = require("../models");
 
 const createProduct = async (req, res) => {
+  console.log("REQ::::", req);
   const {files} = req;
   const {userName} = req.user;
-  const {name, code, categoryId, amount, description, price, saleOffPrice, producerId, note, isFeaturedProduct} = req.body;
+  let {name, code, categoryId, amount, description, price, saleOffPrice, producerId, note, isFeaturedProduct} = req.body;
+  if(!saleOffPrice) {
+    saleOffPrice = null;
+  }
+  if(!producerId) {
+    producerId = null;
+  }
   const thumbnailImg = files[0] ? `http://localhost:4000/${files[0].path}` : null;
   const productImg1 = files[1] ? `http://localhost:4000/${files[1].path}` : null;
   const productImg2 = files[2] ? `http://localhost:4000/${files[2].path}` : null;
@@ -14,7 +21,6 @@ const createProduct = async (req, res) => {
       name, code, categoryId, amount, description, price, saleOffPrice, producerId, note, isFeaturedProduct, 
       createdBy: userName, thumbnailImg, updatedBy: userName, productImg1, productImg2, productImg3, productImg4
     });
-    console.log(newProduct);
 		res.status(201).send(newProduct);
 	} catch(error) {
     res.status(500).send(error);
