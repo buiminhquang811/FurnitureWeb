@@ -1,7 +1,7 @@
 const { Product, sequelize } = require("../models");
+const { QueryTypes } = require("sequelize");
 
 const createProduct = async (req, res) => {
-  console.log("REQ::::", req);
   const {files} = req;
   const {userName} = req.user;
   let {name, code, categoryId, amount, description, price, saleOffPrice, producerId, note, isFeaturedProduct} = req.body;
@@ -28,11 +28,27 @@ const createProduct = async (req, res) => {
 };
 
 const getAllProduct = async (req, res) => {
+  const {page, size, term} = req.query;
+	const offset = page*size;
+	let subQuery = `select count (*) as totalRow from products`;
+	if(term && term.length) {
+		subQuery += ` where name like '%${term}%'`;
+	};
+  let query = `select products.id, products.name as name, products.code, categories.name as categoryName,
+  categoryId, producerId, producers.name as producerName, amount, price, saleOffPrice, thumbnailImg, description,
+  products.createdBy, products.updatedBy, products.createdAt, products.updatedAt from products
+   left join categories on products.categoryId = categories.id left join producers on products.producerId = producers.id`;
+  if(term && term.length) {
+		query += ` where products.name like '%${term}%'`;
+	};
+	query += ` limit ${size} offset ${offset}`;
 	try {
-		const [listProducts] = await sequelize.query(
-		`select id, name, code, categoryId, amount, description, price, saleOffPrice, producerId, note, isFeaturedProduct,createdBy, updatedAt, thumbnailImg, productImg1, productImg2, productImg3, productImg4 from products`
-		);
-		res.status(200).send(listProducts);
+		const [listProducts] = await sequelize.query(query);
+    const totalRow = await sequelize.query(subQuery, { type: QueryTypes.SELECT });
+    const obj = {};
+    obj.listProducts = listProducts;
+		obj.totalRow = totalRow[0].totalRow
+		res.status(200).send(obj);
 	} catch (error) {
 		res.status(500).send(error);
 	}
@@ -76,8 +92,27 @@ const updateProduct = async (req, res) => {
 	}
 };
 
+const getOneProduct = async (req, res) => {
+  const { id } = req.params;
+  let query = `select products.id, products.name as name, products.code, categories.name as categoryName,
+  categoryId, producerId, producers.name as producerName, amount, price, saleOffPrice, thumbnailImg, 
+  productImg2, productImg1, productImg3, productImg4, description,
+  products.createdBy, products.updatedBy, products.createdAt, products.updatedAt from products
+   left join categories on products.categoryId = categories.id left join producers on products.producerId = producers.id`;
+	query += ` where products.id = ${id}`;
+	try {
+		const [listProducts] = await sequelize.query(query);
+    const obj = {};
+    obj.product = listProducts[0];
+		res.status(200).send(obj);
+	} catch (error) {
+		res.status(500).send(error);
+	}
+};
+
 module.exports = {
   createProduct,
   getAllProduct,
-  updateProduct
+  updateProduct,
+  getOneProduct
 };
