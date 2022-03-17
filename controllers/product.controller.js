@@ -28,18 +28,47 @@ const createProduct = async (req, res) => {
 };
 
 const getAllProduct = async (req, res) => {
-  const {page, size, term} = req.query;
+  const {page, size, name, code, producer, orderBy} = req.query;
 	const offset = page*size;
 	let subQuery = `select count (*) as totalRow from products`;
-	if(term && term.length) {
-		subQuery += ` where name like '%${term}%'`;
-	};
+  subQuery += ` where 1 = 1`
+  if(name && name.length) {
+    subQuery += ` and products.name like '%${name}%'`;
+  };
+  if(code && code.length) {
+    subQuery += ` and products.code like '%${code}%'`;
+  };
+  if(producer) {
+    subQuery += ` and producerId = '${producer}'`;
+  };
+
   let query = `select products.id, products.name as name, products.code, categories.name as categoryName,
   categoryId, producerId, producers.name as producerName, amount, price, saleOffPrice, thumbnailImg, description,
   products.createdBy, products.updatedBy, products.createdAt, products.updatedAt from products
    left join categories on products.categoryId = categories.id left join producers on products.producerId = producers.id`;
-  if(term && term.length) {
-		query += ` where products.name like '%${term}%'`;
+   query += ` where 1 = 1`
+   if(name && name.length) {
+		query += ` and products.name like '%${name}%'`;
+	};
+  if(code && code.length) {
+		query += ` and products.code like '%${code}%'`;
+	};
+  if(producer) {
+		query += ` and producerId = '${producer}'`;
+	};
+  if(orderBy) {
+		if(orderBy == 1) {
+      query += ` order by amount asc`
+    };
+    if(orderBy == 2) {
+      query += ` order by amount desc`
+    };
+    if(orderBy == 3) {
+      query += ` order by price asc`
+    };
+    if(orderBy == 4) {
+      query += ` order by price desc`
+    }
 	};
 	query += ` limit ${size} offset ${offset}`;
 	try {
@@ -70,8 +99,8 @@ const updateProduct = async (req, res) => {
     newProduct.amount = amount;
     newProduct.description = description;
     newProduct.price = price;
-    newProduct.saleOffPrice = saleOffPrice;
-    newProduct.producerId = producerId;
+    newProduct.saleOffPrice = saleOffPrice ? saleOffPrice : null;
+    newProduct.producerId = producerId ? producerId : null;
     newProduct.note = note;
     newProduct.isFeaturedProduct = isFeaturedProduct;
 
@@ -110,9 +139,24 @@ const getOneProduct = async (req, res) => {
 	}
 };
 
+const deleteProduct = async (req, res) => {
+	const { id } = req.params;
+	try {
+		await Product.destroy({
+		  where: {
+			id,
+		  },
+		});
+		res.status(200).send("xóa thành công");
+	  } catch (error) {
+		res.status(500).send(error);
+	  }
+}
+
 module.exports = {
   createProduct,
   getAllProduct,
   updateProduct,
-  getOneProduct
+  getOneProduct,
+  deleteProduct
 };
