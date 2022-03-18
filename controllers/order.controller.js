@@ -1,5 +1,5 @@
 const { QueryTypes } = require("sequelize");
-const { Order, sequelize, OrderProduct } = require("../models");
+const { Order, sequelize, OrderProduct, Product } = require("../models");
 
 const createOrder = async (req, res) => {
 
@@ -8,7 +8,6 @@ const createOrder = async (req, res) => {
   
 	try {
 		const newOrder = await Order.create({ name, address, email, note, mobile }, {transaction: t});
-    console.log({newOrder});
     for(let i = 0; i < products.length; i++) {
       const {productId, quantity, price} = products[i];
       const newOd = await OrderProduct.create({ productId, quantity, price, orderId: newOrder.id }, {transaction: t});
@@ -24,17 +23,38 @@ const createOrder = async (req, res) => {
 
 
 const getAllOrder = async (req, res) => {
-	const {page, size, term} = req.query;
+	const {page, size, name, email, phone, status} = req.query;
 	const offset = page*size;
 	let subQuery = `select count (*) as totalRow from orders`;
-	if(term && term.length) {
-		subQuery += ` where name like '%${term}%'`;
-	};
+	subQuery += ` where 1 = 1`
+
+	if(name && name.length) {
+    subQuery += ` and name like '%${name}%'`;
+  };
+  if(email && email.length) {
+    subQuery += ` and email like '%${email}%'`;
+  };
+	if(phone && phone.length) {
+    subQuery += ` and mobile like '%${phone}%'`;
+  };
+  if(status) {
+    subQuery += ` and status = '${status}'`;
+  };
 
 	let query = `select * from orders`;
-	if(term && term.length) {
-		query += ` where name like '%${term}%'`;
-	};
+	query += ` where 1 = 1`
+	if(name && name.length) {
+    query += ` and name like '%${name}%'`;
+  };
+  if(email && email.length) {
+    query += ` and email like '%${email}%'`;
+  };
+	if(phone && phone.length) {
+    query += ` and mobile like '%${phone}%'`;
+  };
+  if(status) {
+    query += ` and status = '${status}'`;
+  };
 	query += ` limit ${size} offset ${offset}`;
 
 	try {
@@ -56,6 +76,7 @@ const getOneOrder = async (req, res) => {
   odpd.quantity, odpd.price, odpd.id as id from orderproducts odpd join products prd on odpd.productId = prd.id 
   join orders ods on odpd.orderId = ods.id `;
 	query += `where ods.id = ${id}`;
+	query += ` order by odpd.quantity asc`
 	try {
 		const [listProducts] = await sequelize.query(query);
     const obj = {};
@@ -68,15 +89,59 @@ const getOneOrder = async (req, res) => {
 
 const updateOrder = async (req, res) => {
   const { id } = req.params;
+	const t = await sequelize.transaction();
 	try {
-    const newOrder = await Order.findOne({
-      where: {
-        id,
-      },
-    });
-    newOrder.status = 2
-    await newOrder.save();
-		res.status(200).send(newOrder);
+		let queryGetTotalProduct = `select prd.name as productName, prd.code as productCode, prd.id as productId,
+		odpd.quantity, odpd.price, odpd.id as id from orderproducts odpd join products prd on odpd.productId = prd.id 
+		join orders ods on odpd.orderId = ods.id `;
+		queryGetTotalProduct += `where ods.id = ${id}`;
+		queryGetTotalProduct += ` order by odpd.quantity asc`;
+		const [listProducts] = await sequelize.query(queryGetTotalProduct);
+		if(listProducts.length) {
+			//check if all is oke
+			let valid = true;
+			for(let i = 0; i < listProducts.length; i++) {
+				const newProduct = await Product.findOne({
+					where: {
+						id: listProducts[i].productId,
+					},
+				});
+				newProduct.amount = newProduct.amount - listProducts[i].quantity;
+				if(newProduct.amount < 0) {
+					valid = false;
+					res.status(500).send({ message: `Số lượng sản phẩm ${listProducts[i].productName} trong kho không đủ`});
+					return t.rollback();
+				}
+			};
+
+			//update db
+			if(valid) {
+				for(let i = 0; i < listProducts.length; i++) {
+					const newProduct = await Product.findOne({
+						where: {
+							id: listProducts[i].productId,
+						},
+					});
+					newProduct.amount = newProduct.amount - listProducts[i].quantity;
+					if(newProduct.amount < 0) {
+						res.status(500).send({ message: `Số lượng sản phẩm ${listProducts[i].productName} trong kho không đủ`});
+						return t.rollback();
+					} else {
+						await newProduct.save();
+					}
+				};
+				const newOrder = await Order.findOne({
+					where: {
+						id,
+					},
+				});
+				newOrder.status = 2;
+				await newOrder.save();
+				res.status(200).send(newOrder);
+				return t.commit();
+			}
+		
+		}		
 	} catch (error) {
 		res.status(500).send(error);
 	}
