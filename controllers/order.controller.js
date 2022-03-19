@@ -87,6 +87,22 @@ const getOneOrder = async (req, res) => {
 	}
 };
 
+const rejectOrder = async(req, res) => {
+	const { id } = req.params;
+	try {
+		const newOrder = await Order.findOne({
+			where: {
+				id,
+			},
+		});
+		newOrder.status = -1;
+		await newOrder.save();
+		res.status(200).send(newOrder);
+	} catch (error) {
+		res.status(500).send(error);
+	}
+}
+
 const updateOrder = async (req, res) => {
   const { id } = req.params;
 	const t = await sequelize.transaction();
@@ -152,4 +168,5 @@ module.exports = {
   getAllOrder,
   getOneOrder,
   updateOrder,
+	rejectOrder
 };
