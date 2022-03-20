@@ -21,13 +21,14 @@ const login = async (req, res) => {
   const { userName, password } = req.body;
   try {
     const [user] = await sequelize.query(
-      `select userName, password, role from users inner join roles 
+      `select userName, password, role, fullName, phoneNumber, email from users inner join roles 
       on roleId = roles.id where userName = '${userName}'`
     );
     if(user && user.length) {
       const isAuth = await bcrypt.compareSync(password, user[0].password);
       if (isAuth) {
-        const token = jwt.sign({ userName: user[0].userName, role: user[0].role }, "minh-quang-0811", { expiresIn: 60 * 60 });
+        const token = jwt.sign({ userName: user[0].userName, role: user[0].role, fullName: user[0].fullName,
+          phoneNumber: user[0].phoneNumber, email: user[0].email }, "minh-quang-0811", { expiresIn: 60 * 60 });
         res.status(200).send({ message: "Đăng Nhập Thành Công ! ", token });
       } else {
         res.status(500).send({ message: "Tài khoản hoặc mật khẩu không đúng" });

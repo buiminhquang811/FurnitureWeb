@@ -28,7 +28,7 @@ const createProduct = async (req, res) => {
 };
 
 const getAllProduct = async (req, res) => {
-  const {page, size, name, code, producer, orderBy} = req.query;
+  const {page, size, name, code, producer, orderBy, category} = req.query;
 	const offset = page*size;
 	let subQuery = `select count (*) as totalRow from products`;
   subQuery += ` where 1 = 1`
@@ -41,7 +41,9 @@ const getAllProduct = async (req, res) => {
   if(producer) {
     subQuery += ` and producerId = '${producer}'`;
   };
-
+  if(category) {
+    subQuery += ` and categoryId = '${category}'`;
+  };
   let query = `select products.id, products.name as name, products.code, categories.name as categoryName,
   categoryId, producerId, producers.name as producerName, amount, price, saleOffPrice, thumbnailImg, description,
   products.createdBy, products.updatedBy, products.createdAt, products.updatedAt from products
@@ -56,6 +58,9 @@ const getAllProduct = async (req, res) => {
   if(producer) {
 		query += ` and producerId = '${producer}'`;
 	};
+  if(category) {
+    query += ` and categoryId = '${category}'`;
+  };
   if(orderBy) {
 		if(orderBy == 1) {
       query += ` order by amount asc`
